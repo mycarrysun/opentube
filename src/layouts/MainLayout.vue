@@ -1,5 +1,5 @@
 <template>
-  <q-layout view="lHh Lpr lFf">
+  <q-layout view="hHh Lpr lFf">
     <q-header elevated>
       <q-toolbar>
         <q-btn
@@ -12,10 +12,8 @@
         />
 
         <q-toolbar-title>
-          Quasar App
+          OpenTube
         </q-toolbar-title>
-
-        <div>Quasar v{{ $q.version }}</div>
       </q-toolbar>
     </q-header>
 
@@ -25,92 +23,89 @@
       bordered
     >
       <q-list>
-        <q-item-label
-          header
-        >
-          Essential Links
-        </q-item-label>
+        <div>
+          <q-item
+            clickable
+            :to="{ name: ROUTES.HOME_FEED }"
+          >
+            <q-item-section
+              avatar
+            >
+              <q-icon name="home" />
+            </q-item-section>
 
-        <EssentialLink
-          v-for="link in essentialLinks"
-          :key="link.title"
-          v-bind="link"
-        />
+            <q-item-section>
+              <q-item-label>Home</q-item-label>
+            </q-item-section>
+          </q-item>
+        </div>
+        <div>
+          <q-item clickable
+                  @click="toggleDarkMode">
+            <q-item-section avatar>
+              <q-icon :name="darkModeActive ? 'light_mode' : 'dark_mode'"/>
+            </q-item-section>
+
+            <q-item-section>Dark Mode</q-item-section>
+          </q-item>
+        </div>
       </q-list>
     </q-drawer>
 
     <q-page-container>
-      <router-view />
+      <Suspense @pending="showLoading" @resolve="hideLoading">
+        <router-view />
+      </Suspense>
     </q-page-container>
   </q-layout>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from 'vue';
-import EssentialLink from 'components/EssentialLink.vue';
+import { defineComponent, ref, watch } from 'vue';
+import { ROUTES } from 'src/router/routes';
+import { useQuasar } from 'quasar';
 
-const linksList = [
-  {
-    title: 'Docs',
-    caption: 'quasar.dev',
-    icon: 'school',
-    link: 'https://quasar.dev'
-  },
-  {
-    title: 'Github',
-    caption: 'github.com/quasarframework',
-    icon: 'code',
-    link: 'https://github.com/quasarframework'
-  },
-  {
-    title: 'Discord Chat Channel',
-    caption: 'chat.quasar.dev',
-    icon: 'chat',
-    link: 'https://chat.quasar.dev'
-  },
-  {
-    title: 'Forum',
-    caption: 'forum.quasar.dev',
-    icon: 'record_voice_over',
-    link: 'https://forum.quasar.dev'
-  },
-  {
-    title: 'Twitter',
-    caption: '@quasarframework',
-    icon: 'rss_feed',
-    link: 'https://twitter.quasar.dev'
-  },
-  {
-    title: 'Facebook',
-    caption: '@QuasarFramework',
-    icon: 'public',
-    link: 'https://facebook.quasar.dev'
-  },
-  {
-    title: 'Quasar Awesome',
-    caption: 'Community Quasar projects',
-    icon: 'favorite',
-    link: 'https://awesome.quasar.dev'
-  }
-];
+const DARK_MODE_STORAGE_KEY = 'dark_mode';
 
 export default defineComponent({
   name: 'MainLayout',
 
   components: {
-    EssentialLink
+
   },
 
-  setup () {
-    const leftDrawerOpen = ref(false)
+  setup() {
+    const $q = useQuasar();
+    const leftDrawerOpen = ref(false);
+    const darkModeActive = ref($q.localStorage.getItem<boolean>(DARK_MODE_STORAGE_KEY) ?? false);
+
+    $q.dark.set(darkModeActive.value);
+
+    watch(() => $q.dark.isActive, (val) => {
+      darkModeActive.value = val;
+      $q.localStorage.set(DARK_MODE_STORAGE_KEY, val);
+    });
 
     return {
-      essentialLinks: linksList,
+      ROUTES,
       leftDrawerOpen,
-      toggleLeftDrawer () {
-        leftDrawerOpen.value = !leftDrawerOpen.value
-      }
-    }
-  }
+      toggleLeftDrawer() {
+        leftDrawerOpen.value = !leftDrawerOpen.value;
+      },
+      toggleDarkMode: $q.dark.toggle,
+      darkModeActive,
+      showLoading: $q.loading.show,
+      hideLoading: $q.loading.hide,
+    };
+  },
 });
 </script>
+
+<style lang="scss">
+.q-list {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
+</style>
